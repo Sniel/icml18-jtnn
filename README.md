@@ -21,5 +21,25 @@ This repository contains the following directories:
 * `molopt/` includes scripts for jointly training our VAE and property predictors. Please read `molopt/README.md` for details.
 * `jtnn/` contains codes for model formulation.
 
-# Contact
-Wengong Jin (wengong@csail.mit.edu)
+
+# Running on ComputeCanada clusters
+
+That's how I made it work.  There may be other ways that doesn't involve installing miniconda.
+
+1. Install miniconda for Python 3
+    eb Miniconda3-4.3.27.eb
+
+2. Create conda env
+
+3. Conda install the following packages:
+    RDKit
+    Pytorch
+    Scipy
+
+4. Run job with one of the .sh scripts:
+    molvae_pretrain.sh
+    molvae_reconstruct.sh
+    ...
+
+
+
