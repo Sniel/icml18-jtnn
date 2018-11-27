@@ -1,3 +1,7 @@
+# Add the current directory so that we can find jtnn module
+import sys
+sys.path.append('')
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -41,5 +45,5 @@ model.load_state_dict(load_dict)
 model = model.cuda()
 
 torch.manual_seed(0)
-for i in xrange(nsample):
-    print model.sample_prior(prob_decode=True)
+for i in range(nsample):
+    print(model.sample_prior(prob_decode=True))

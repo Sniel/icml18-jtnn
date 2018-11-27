@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
-from mol_tree import Vocab, MolTree, MolTreeNode
-from nnutils import create_var, GRU
-from chemutils import enum_assemble
+
+from jtnn.mol_tree import Vocab, MolTree, MolTreeNode
+from jtnn.nnutils import create_var, GRU
+from jtnn.chemutils import enum_assemble
 import copy
 
 MAX_NB = 8
@@ -70,7 +71,7 @@ class JTNNDecoder(nn.Module):
         padding = create_var(torch.zeros(self.hidden_size), False)
         h = {}
 
-        for t in xrange(max_iter):
+        for t in range(max_iter):
             prop_list = []
             batch_list = []
             for i,plist in enumerate(traces):
@@ -182,7 +183,8 @@ class JTNNDecoder(nn.Module):
         stop_acc = torch.eq(stops, stop_targets).float()
         stop_acc = torch.sum(stop_acc) / stop_targets.nelement()
 
-        return pred_loss, stop_loss, pred_acc.data[0], stop_acc.data[0]
+        # return pred_loss, stop_loss, pred_acc.data[0], stop_acc.data[0]
+        return pred_loss, stop_loss, pred_acc.item(), stop_acc.item()
     
     def decode(self, mol_vec, prob_decode):
         stack,trace = [],[]
@@ -203,7 +205,7 @@ class JTNNDecoder(nn.Module):
 
         all_nodes = [root]
         h = {}
-        for step in xrange(MAX_DECODE_LEN):
+        for step in range(MAX_DECODE_LEN):
             node_x,fa_slot = stack[-1]
             cur_h_nei = [ h[(node_y.idx,node_x.idx)] for node_y in node_x.neighbors ]
             if len(cur_h_nei) > 0:
