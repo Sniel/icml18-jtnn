@@ -5,6 +5,7 @@ from jtnn.mol_tree import Vocab, MolTree, MolTreeNode
 from jtnn.nnutils import create_var, GRU
 from jtnn.chemutils import enum_assemble
 import copy
+import numpy as np
 
 MAX_NB = 8
 MAX_DECODE_LEN = 100
@@ -223,7 +224,7 @@ class JTNNDecoder(nn.Module):
             stop_score = nn.Sigmoid()(self.U_s(stop_hidden) * 20).squeeze()
             
             if prob_decode:
-                backtrack = (torch.bernoulli(1.0 - stop_score.data)[0] == 1)
+                backtrack = (torch.bernoulli(1.0 - stop_score.data).item() == 1)
             else:
                 backtrack = (stop_score.data[0] < 0.5)
 
@@ -231,13 +232,16 @@ class JTNNDecoder(nn.Module):
                 new_h = GRU(cur_x, cur_h_nei, self.W_z, self.W_r, self.U_r, self.W_h)
                 pred_hidden = torch.cat([new_h,mol_vec], dim=1)
                 pred_hidden = nn.ReLU()(self.W(pred_hidden))
-                pred_score = nn.Softmax()(self.W_o(pred_hidden) * 20)
+                pred_score = nn.Softmax(dim=1)(self.W_o(pred_hidden) * 20)
                 if prob_decode:
+                    if(pred_score.data.squeeze().sum().item() > 1):
+                        print(pred_score.data.squeeze().sum().item())
                     sort_wid = torch.multinomial(pred_score.data.squeeze(), 5)
+                    #sort_wid = np.random.multinomial(5, pred_score.data.squeeze())
                 else:
                     _,sort_wid = torch.sort(pred_score, dim=1, descending=True)
                     sort_wid = sort_wid.data.squeeze()
-
+                sort_wid = sort_wid.cpu().numpy()
                 next_wid = None
                 for wid in sort_wid[:5]:
                     slots = self.vocab.get_slots(wid)

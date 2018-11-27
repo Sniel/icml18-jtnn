@@ -277,7 +277,7 @@ class JTNNVAE(nn.Module):
         scores = torch.mv(cand_vecs, mol_vec) * 20
 
         if prob_decode:
-            probs = nn.Softmax()(scores.view(1,-1)).squeeze() + 1e-5 #prevent prob = 0
+            probs = nn.Softmax(dim=1)(scores.view(1,-1)).squeeze() + 1e-5 #prevent prob = 0
             cand_idx = torch.multinomial(probs, probs.numel())
         else:
             _,cand_idx = torch.sort(scores, descending=True)
@@ -285,7 +285,7 @@ class JTNNVAE(nn.Module):
         backup_mol = Chem.RWMol(cur_mol)
         for i in range(cand_idx.numel()):
             cur_mol = Chem.RWMol(backup_mol)
-            pred_amap = cand_amap[cand_idx[i].data[0]]
+            pred_amap = cand_amap[cand_idx[i].data.item()]
             new_global_amap = copy.deepcopy(global_amap)
 
             for nei_id,ctr_atom,nei_atom in pred_amap:
