@@ -1,3 +1,4 @@
+print("Start")
 # Add the current directory so that we can find jtnn module
 import sys
 sys.path.append('')

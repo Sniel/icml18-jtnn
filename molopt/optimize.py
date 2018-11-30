@@ -48,16 +48,18 @@ with open(opts.test_path) as f:
         s = line.strip("\r\n ").split()[0]
         data.append(s)
 
-res = []
-for smiles in data:
-    mol = Chem.MolFromSmiles(smiles)
-    score = Descriptors.MolLogP(mol) - sascorer.calculateScore(mol)
+with open("optimization.txt", "w") as f:
+    res = []
+    for smiles in data:
+        mol = Chem.MolFromSmiles(smiles)
+        score = Descriptors.MolLogP(mol) - sascorer.calculateScore(mol)
 
-    new_smiles,sim = model.optimize(smiles, sim_cutoff=sim_cutoff, lr=2, num_iter=80)
-    new_mol = Chem.MolFromSmiles(new_smiles)
-    new_score = Descriptors.MolLogP(new_mol) - sascorer.calculateScore(new_mol)
+        new_smiles,sim = model.optimize(smiles, sim_cutoff=sim_cutoff, lr=2, num_iter=80)
+        new_mol = Chem.MolFromSmiles(new_smiles)
+        new_score = Descriptors.MolLogP(new_mol) - sascorer.calculateScore(new_mol)
 
-    res.append( (new_score - score, sim, score, new_score, smiles, new_smiles) )
-    print(new_score - score, sim, score, new_score, smiles, new_smiles)
-
-print(sum([x[0] for x in res]), sum([x[1] for x in res]))
+        res.append( (new_score - score, sim, score, new_score, smiles, new_smiles) )
+        print(new_score - score, sim, score, new_score, smiles, new_smiles)
+        f.write("{}{}{}{}{}{}".format(new_score - score, sim, score, new_score, smiles, new_smiles))
+        f.flush()
+    print(sum([x[0] for x in res]), sum([x[1] for x in res]))
