@@ -5,3 +5,4 @@ from jtnn.mpn import MPN, mol2graph
 from jtnn.nnutils import create_var
 from jtnn.datautils import MoleculeDataset, PropDataset
 from jtnn.chemutils import decode_stereo
+from jtnn import metrics
