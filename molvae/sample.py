@@ -52,11 +52,15 @@ torch.manual_seed(0)
 morgan_samples = []
 tanimoto_samples = []
 samples = []
-
-for i in range(nsample):
-    sample = model.sample_prior(prob_decode=True)
-    samples.append(sample)
-    print(sample)
+with open("samples.txt", "w") as f:
+    for i in range(nsample):
+        if i % 100 == 0:
+            print(i)
+        sample = model.sample_prior(prob_decode=True)
+        samples.append(sample)
+        if sample is not None:
+            f.write(sample + "\n")
+        #print(sample)
 
 
 data = []
@@ -65,5 +69,5 @@ with open("../data/train.txt") as f:
         s = line.strip("\r\n ").split()[0]
         data.append(s)
 
-print("Internal similarity: {}".format(metrics.internal_diversity(samples)))
-print("External similarity: {} ".format(metrics.external_diversity(data, samples)))
+# print("Internal similarity: {}".format(metrics.internal_diversity(samples)))
+# print("External similarity: {} ".format(metrics.external_diversity(data, samples)))

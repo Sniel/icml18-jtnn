@@ -4,6 +4,9 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree
 from collections import defaultdict
 from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers, StereoEnumerationOptions
+from rdkit.Chem import rdmolops
+
+import numpy as np
 
 MST_MAX_WEIGHT = 100 
 MAX_NCAND = 2000
@@ -394,3 +397,111 @@ if __name__ == "__main__":
             #print cnt * 1.0 / n
     
     count()
+
+SMALL_NUMBER = 1e-7
+LARGE_NUMBER= 1e10
+
+geometry_numbers=[3, 4, 5, 6] # triangle, square, pentagen, hexagon
+
+# bond mapping
+bond_dict = {'SINGLE': 0, 'DOUBLE': 1, 'TRIPLE': 2, "AROMATIC": 3}
+number_to_bond= {0: Chem.rdchem.BondType.SINGLE, 1:Chem.rdchem.BondType.DOUBLE,
+                 2: Chem.rdchem.BondType.TRIPLE, 3:Chem.rdchem.BondType.AROMATIC}
+
+
+def to_graph(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return [], []
+    # Kekulize it
+    if need_kekulize(mol):
+        rdmolops.Kekulize(mol)
+        if mol is None:
+            return None, None
+    # remove stereo information, such as inward and outward edges
+    Chem.RemoveStereochemistry(mol)
+
+    edges = []
+    nodes = []
+    for bond in mol.GetBonds():
+        edges.append((bond.GetBeginAtomIdx(), bond_dict[str(bond.GetBondType())], bond.GetEndAtomIdx()))
+        assert bond_dict[str(bond.GetBondType())] != 3
+    for atom in mol.GetAtoms():
+        symbol = atom.GetSymbol()
+        valence = atom.GetTotalValence()
+        charge = atom.GetFormalCharge()
+        atom_str = "%s%i(%i)" % (symbol, valence, charge)
+
+        if atom_str not in dataset_info()['atom_types']:
+            print('unrecognized atom type %s' % atom_str)
+            return [], []
+
+        nodes.append(onehot(dataset_info()['atom_types'].index(atom_str), len(dataset_info()['atom_types'])))
+
+    return nodes, edges
+
+
+def need_kekulize(mol):
+    for bond in mol.GetBonds():
+        if bond_dict[str(bond.GetBondType())] >= 3:
+            return True
+    return False
+
+
+def dataset_info():
+    return { 'atom_types': ['Br1(0)', 'C4(0)', 'Cl1(0)', 'F1(0)', 'H1(0)', 'I1(0)',
+                            'S1(-1)', 'P5(0)', 'S3(1)', 'O3(1)', 'C3(-1)', 'P3(0)', 'P4(1)',  #added this line of atom types to get rid of messages
+            'N2(-1)', 'N3(0)', 'N4(1)', 'O1(-1)', 'O2(0)', 'S2(0)','S4(0)', 'S6(0)'],
+             'maximum_valence': {0: 1, 1: 4, 2: 1, 3: 1, 4: 1, 5:1, 6:2, 7:3, 8:4, 9:1, 10:2, 11:2, 12:4, 13:6, 14:3},
+             'number_to_atom': {0: 'Br', 1: 'C', 2: 'Cl', 3: 'F', 4: 'H', 5:'I', 6:'N', 7:'N', 8:'N', 9:'O', 10:'O', 11:'S', 12:'S', 13:'S'},
+             'bucket_sizes': np.array([28,31,33,35,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,53,55,58,84])
+           }
+
+def onehot(idx, len):
+    z = [0 for _ in range(len)]
+    z[idx] = 1
+    return z
+
+
+# Potentially useful functions I yinged from the microsoft code. Currently unused.
+def dump(file_name, content):
+    with open(file_name, 'wb') as out_file:
+        pickle.dump(content, out_file, pickle.HIGHEST_PROTOCOL)
+
+
+def load(file_name):
+    with open(file_name, 'rb') as f:
+        return pickle.load(f)
+        # add one edge to adj matrix
+
+
+def add_edge_mat(amat, src, dest, e, considering_edge_type=True):
+    if considering_edge_type:
+        amat[e, dest, src] = 1
+        amat[e, src, dest] = 1
+    else:
+        amat[src, dest] = 1
+        amat[dest, src] = 1
+
+
+def graph_to_adj_mat(graph, max_n_vertices, num_edge_types, tie_fwd_bkwd=True, considering_edge_type=True):
+    if considering_edge_type:
+        amat = np.zeros((num_edge_types, max_n_vertices, max_n_vertices))
+        for src, e, dest in graph:
+            add_edge_mat(amat, src, dest, e)
+    else:
+        amat = np.zeros((max_n_vertices, max_n_vertices))
+        for src, e, dest in graph:
+            add_edge_mat(amat, src, dest, e, considering_edge_type=False)
+    return amat
+
+
+def check_validity(dataset):
+    with open('generated_smiles_%s' % dataset, 'rb') as f:
+        all_smiles = set(pickle.load(f))
+    count = 0
+    for smiles in all_smiles:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is not None:
+            count += 1
+    return len(all_smiles), count
