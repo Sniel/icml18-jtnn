@@ -9,7 +9,8 @@ import jtnn .utils as utils
 import jtnn.chemutils
 import time
 
-
+# Based on https://arxiv.org/pdf/1708.08227.pdf
+# Compute the internal chemical diversity within a set of molecules: checks how different the molecules are from one another
 def internal_diversity(smiles):
     fps = []
 
@@ -18,16 +19,17 @@ def internal_diversity(smiles):
 
     internal_divers = 0
     for i, fp1 in enumerate(fps):
-        if i % 100 == 0:
+        if i % 10000 == 0:
             print(i)
         for j, fp2 in enumerate(fps):
-            internal_divers += DataStructs.FingerprintSimilarity(fp1, fp2)
+            internal_divers += (1-DataStructs.FingerprintSimilarity(fp1, fp2))
 
     internal_divers /= len(fps) ** 2
 
     return internal_divers
 
-
+# Based on https://arxiv.org/pdf/1708.08227.pdf
+# Compute the external chemical diversity: how different are the generated molecules from the train set
 def external_diversity(train_smiles, generated_smiles):
     train_fps = []
     generated_fps = []
@@ -40,10 +42,10 @@ def external_diversity(train_smiles, generated_smiles):
 
     external_divers = 0
     for i, fp1 in enumerate(train_fps):
-        if i % 100 == 0:
+        if i % 10000 == 0:
             print(i)
         for j, fp2 in enumerate(generated_fps):
-            external_divers += DataStructs.FingerprintSimilarity(fp1, fp2)
+            external_divers += (1-DataStructs.FingerprintSimilarity(fp1, fp2))
 
     external_divers /= (len(train_fps) * len(generated_fps))
 
@@ -96,7 +98,7 @@ def get_closest_molecules_ged(batch_size, train, generated_smile, n):
 
 
 if __name__ == "__main__":
-    limit = 100
+    limit = 1
     train_set = utils.load_smiles_data("../data/train.txt", limit)
     #
     generated_beta0_001 = utils.load_smiles_data("../data/samples_MPNVAE-h450-L56-d3-beta0.001.txt", limit)
@@ -120,9 +122,9 @@ if __name__ == "__main__":
     # images = Chem.Draw.MolsToImage(mols)
     #
     # images.save('closest_molecules.png')
-    print("External diversity: {}".format(external_diversity(train_set, generated_beta0_001)))
-    print("External diversity: {}".format(external_diversity(train_set, generated_beta0_005)))
-    print("External diversity: {}".format(external_diversity(train_set, generated_noKL)))
+    # print("External diversity: {}".format(external_diversity(train_set, generated_beta0_001)))
+    # print("External diversity: {}".format(external_diversity(train_set, generated_beta0_005)))
+    # print("External diversity: {}".format(external_diversity(train_set, generated_noKL)))
     print("Internal diversity: {}".format(internal_diversity(generated_beta0_001)))
     print("Internal diversity: {}".format(internal_diversity(generated_beta0_005)))
     print("Internal diversity: {}".format(internal_diversity(generated_noKL)))

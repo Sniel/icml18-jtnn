@@ -9,7 +9,7 @@ def load_smiles_data(data_path, limit=None):
             s = line.split("\n")[0]
             data.append(s)
             counter += 1
-            if limit is not None and counter > limit:
+            if limit is not None and counter >= limit:
                 break
 
     return data
